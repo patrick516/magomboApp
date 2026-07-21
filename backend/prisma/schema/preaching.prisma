@@ -1,0 +1,15 @@
+model Preaching {
+  id              String   @id @default(uuid())
+  sermonId        String   @map("sermon_id")
+  partNumber      Int      @map("part_number")
+  dateRecorded    DateTime @map("date_recorded")
+  durationSeconds Int      @map("duration_seconds")
+  audioUrl        String   @map("audio_url")
+  playCount       Int      @default(0) @map("play_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  sermon Sermon @relation(fields: [sermonId], references: [id])
+
+  @@unique([sermonId, partNumber])
+  @@map("preachings")
+}

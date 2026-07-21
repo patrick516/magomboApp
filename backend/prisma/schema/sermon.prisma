@@ -1,0 +1,12 @@
+model Sermon {
+  id         String   @id @default(uuid())
+  preacherId String   @map("preacher_id")
+  theme      String
+  series     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  preacher   Preacher    @relation(fields: [preacherId], references: [id])
+  preachings Preaching[]
+
+  @@map("sermons")
+}
