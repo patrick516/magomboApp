@@ -33,3 +33,7 @@ export async function rejectPreacher(id: string) {
   );
   return res.data.data;
 }
+
+export async function deletePreacher(id: string) {
+  await adminApiClient.delete(`/preachers/${id}`);
+}

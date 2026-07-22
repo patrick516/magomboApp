@@ -2,6 +2,17 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
+  const bcrypt = require("bcryptjs");
+  const passwordHash = await bcrypt.hash("ChangeMe123!", 10);
+  const admin = await prisma.admin.upsert({
+    where: { email: "admin@magombo.church" },
+    update: {},
+    create: {
+      email: "admin@magombo.church",
+      passwordHash,
+      name: "Church Admin",
+    },
+  });
   console.log("Seeding database...");
 
   // Clear existing data (dev only — order matters due to foreign keys)

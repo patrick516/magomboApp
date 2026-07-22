@@ -51,6 +51,25 @@ async function rejectPreacher(id) {
   });
 }
 
+async function deletePreacher(id) {
+  // Delete preachings first (via sermons), then sermons, then the preacher —
+  // respects foreign key constraints since there's no onDelete: Cascade set up.
+  const sermons = await prisma.sermon.findMany({
+    where: { preacherId: id },
+    select: { id: true },
+  });
+  const sermonIds = sermons.map((s) => s.id);
+
+  if (sermonIds.length > 0) {
+    await prisma.preaching.deleteMany({
+      where: { sermonId: { in: sermonIds } },
+    });
+    await prisma.sermon.deleteMany({ where: { preacherId: id } });
+  }
+
+  return prisma.preacher.delete({ where: { id } });
+}
+
 module.exports = {
   listPreachers,
   listAllPreachers,
@@ -58,4 +77,5 @@ module.exports = {
   registerPreacher,
   approvePreacher,
   rejectPreacher,
+  deletePreacher,
 };

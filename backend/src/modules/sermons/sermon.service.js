@@ -39,4 +39,14 @@ async function listAllSermonsAdmin() {
   });
 }
 
-module.exports = { listSermons, createSermon, listAllSermonsAdmin };
+async function deleteSermon(id) {
+  await prisma.preaching.deleteMany({ where: { sermonId: id } });
+  return prisma.sermon.delete({ where: { id } });
+}
+
+module.exports = {
+  listSermons,
+  createSermon,
+  listAllSermonsAdmin,
+  deleteSermon,
+};

@@ -15,14 +15,28 @@ import {
   ChevronDown,
   ChevronUp,
   Music2,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { format, parseISO } from "date-fns";
 import {
   getAllPreachers,
   approvePreacher,
   rejectPreacher,
+  deletePreacher,
 } from "@/api/preachers";
-import { getSermonsByPreacherAdmin } from "@/api/sermons";
+import { getSermonsByPreacherAdmin, deleteSermon } from "@/api/sermons";
+
 import type { Preacher, PreacherStatus, Sermon } from "@/types";
 
 type FilterTab = "ALL" | PreacherStatus;
@@ -91,6 +105,23 @@ export default function Approvals() {
     } finally {
       setActionLoading(null);
     }
+  }
+
+  async function handleDeletePreacher(id: string) {
+    setActionLoading(id);
+    try {
+      await deletePreacher(id);
+      await load();
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDeleteSermon(preacherId: string, sermonId: string) {
+    await deleteSermon(sermonId);
+    const updated = await getSermonsByPreacherAdmin(preacherId);
+    setPreviewSermons((prev) => ({ ...prev, [preacherId]: updated }));
+    await load();
   }
 
   const filtered =
@@ -206,6 +237,43 @@ export default function Approvals() {
                             </Button>
                           </>
                         )}
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:bg-destructive/10"
+                              disabled={actionLoading === preacher.id}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Delete {preacher.name}?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This permanently deletes this preacher and all{" "}
+                                {preacher._count?.sermons ?? 0} of their
+                                sermon(s), including all recorded parts. This
+                                cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive hover:bg-destructive/90"
+                                onClick={() =>
+                                  handleDeletePreacher(preacher.id)
+                                }
+                              >
+                                Delete Permanently
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
 
@@ -223,9 +291,50 @@ export default function Approvals() {
                               key={sermon.id}
                               className="bg-muted/40 rounded-lg p-3"
                             >
-                              <p className="text-sm font-medium mb-2">
-                                {sermon.theme}
-                              </p>
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-medium">
+                                  {sermon.theme}
+                                </p>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-6 w-6 text-destructive"
+                                    >
+                                      <Trash2 size={14} />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Delete "{sermon.theme}"?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This permanently deletes this sermon and
+                                        all its recorded parts. This cannot be
+                                        undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-destructive hover:bg-destructive/90"
+                                        onClick={() =>
+                                          handleDeleteSermon(
+                                            preacher.id,
+                                            sermon.id,
+                                          )
+                                        }
+                                      >
+                                        Delete Permanently
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
                               <div className="space-y-2">
                                 {sermon.preachings?.map((p) => (
                                   <div

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Play, Pause, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/config/api";
@@ -11,19 +11,43 @@ export function AudioPlayer({ preachingId }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [signedUrl, setSignedUrl] = useState<string>("");
 
-  const audioUrl = `${API_BASE_URL}/preachings/${preachingId}/audio`;
+  const fetchSignedUrl = useCallback(async () => {
+    const response = await fetch(
+      `${API_BASE_URL}/preachings/${preachingId}/audio`,
+    );
+    if (!response.ok) throw new Error("Failed to get audio URL");
+    const data = await response.json();
+    return data.data.signedUrl as string;
+  }, [preachingId]);
 
-  function togglePlay() {
+  async function togglePlay() {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
-    } else {
-      setIsLoading(true);
-      audio.play().catch(() => setIsLoading(false));
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // If we don't have a signed URL yet, fetch it
+      let url = signedUrl;
+      if (!url) {
+        url = await fetchSignedUrl();
+        setSignedUrl(url);
+      }
+
+      // Always set src before playing (in case it was cleared)
+      audio.src = url;
+      await audio.play();
+    } catch (err) {
+      console.error("Playback error:", err);
+      setIsLoading(false);
     }
   }
 
@@ -46,7 +70,6 @@ export function AudioPlayer({ preachingId }: AudioPlayerProps) {
       </Button>
       <audio
         ref={audioRef}
-        src={audioUrl}
         onCanPlay={() => setIsLoading(false)}
         onPlay={() => {
           setIsPlaying(true);

@@ -16,5 +16,5 @@ router.get(
 );
 router.post("/:id/approve", adminAuth, preacherController.approvePreacher);
 router.post("/:id/reject", adminAuth, preacherController.rejectPreacher);
-
+router.delete("/:id", adminAuth, preacherController.deletePreacher);
 module.exports = router;

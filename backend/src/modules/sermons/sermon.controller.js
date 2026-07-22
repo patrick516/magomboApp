@@ -39,4 +39,18 @@ async function listAllSermonsAdmin(req, res, next) {
   }
 }
 
-module.exports = { listSermons, createSermon, listAllSermonsAdmin };
+async function deleteSermon(req, res, next) {
+  try {
+    await sermonService.deleteSermon(req.params.id);
+    res.json({ success: true, message: "Sermon and its parts deleted" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  listSermons,
+  createSermon,
+  listAllSermonsAdmin,
+  deleteSermon,
+};

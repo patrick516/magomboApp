@@ -21,3 +21,7 @@ export async function getSermonsByPreacherAdmin(preacherId: string) {
   const all = await getAllSermonsAdmin();
   return all.filter((s) => s.preacherId === preacherId);
 }
+
+export async function deleteSermon(id: string) {
+  await adminApiClient.delete(`/sermons/${id}`);
+}

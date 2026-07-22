@@ -17,12 +17,10 @@ async function createPreaching(req, res, next) {
     const { dateRecorded, durationSeconds } = req.body;
 
     if (!dateRecorded || !durationSeconds) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "dateRecorded and durationSeconds are required",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "dateRecorded and durationSeconds are required",
+      });
     }
     if (!req.file) {
       return res
@@ -30,7 +28,14 @@ async function createPreaching(req, res, next) {
         .json({ success: false, message: "audio file is required" });
     }
 
-    // audioUrl field now stores the private object KEY, not a public URL
+    // ADD THIS DEBUG LOG HERE
+    console.log("File info:", {
+      exists: !!req.file,
+      bufferLength: req.file?.buffer?.length,
+      originalname: req.file?.originalname,
+      mimetype: req.file?.mimetype,
+    });
+
     const audioKey = await uploadAudio(
       req.file.buffer,
       req.file.originalname,
@@ -58,14 +63,13 @@ async function getAudio(req, res, next) {
         .status(404)
         .json({ success: false, message: "Preaching not found" });
     }
-    // audioUrl holds the private object key — sign a fresh temporary URL each time
+
     const signedUrl = await getSignedAudioUrl(preaching.audioUrl);
-    res.redirect(signedUrl);
+    res.json({ success: true, data: { signedUrl } });
   } catch (err) {
     next(err);
   }
 }
-
 async function incrementPlayCount(req, res, next) {
   try {
     const preaching = await preachingService.incrementPlayCount(req.params.id);

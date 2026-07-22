@@ -12,6 +12,7 @@ const upload = multer({
 
 router.get("/", sermonController.listSermons);
 router.get("/admin/all", adminAuth, sermonController.listAllSermonsAdmin);
+router.delete("/:id", adminAuth, sermonController.deleteSermon);
 router.post("/", sermonController.createSermon);
 router.get(
   "/:sermonId/preachings",

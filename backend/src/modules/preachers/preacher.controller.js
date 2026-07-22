@@ -64,6 +64,15 @@ async function rejectPreacher(req, res, next) {
   }
 }
 
+async function deletePreacher(req, res, next) {
+  try {
+    await preacherService.deletePreacher(req.params.id);
+    res.json({ success: true, message: "Preacher and their sermons deleted" });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   listPreachers,
   listAllPreachers,
@@ -71,4 +80,5 @@ module.exports = {
   registerPreacher,
   approvePreacher,
   rejectPreacher,
+  deletePreacher,
 };
