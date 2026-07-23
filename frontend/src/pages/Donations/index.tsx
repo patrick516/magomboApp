@@ -1,9 +1,18 @@
+// src/pages/Donations/index.tsx
+
 import { useEffect, useState } from "react";
 import { Topbar } from "@/components/Layout/Topbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatsCard } from "@/components/common/StatsCard/index";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -12,9 +21,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { HandCoins, TrendingUp, Hash } from "lucide-react";
+import {
+  HandCoins,
+  TrendingUp,
+  Hash,
+  MoreVertical,
+  Check,
+  X,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { getDonations } from "@/api/donations";
+import { getDonations, updateDonationStatus } from "@/api/donations";
 import type { Donation, DonationStatus } from "@/types";
 
 const statusStyles: Record<DonationStatus, string> = {
@@ -32,24 +48,44 @@ const categoryLabels: Record<string, string> = {
   OTHER: "Other",
 };
 
+function donorLabel(d: Donation): string {
+  if (d.isAnonymous) return "Anonymous";
+  const name = [d.donorFirstName, d.donorLastName].filter(Boolean).join(" ");
+  return name || "—";
+}
+
 export default function Donations() {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  async function load() {
+    try {
+      const data = await getDonations();
+      setDonations(data);
+    } catch {
+      setError("Could not load donations. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function load() {
-      try {
-        const data = await getDonations();
-        setDonations(data);
-      } catch {
-        setError("Could not load donations. Is the backend running?");
-      } finally {
-        setLoading(false);
-      }
-    }
     load();
   }, []);
+
+  async function handleStatusChange(id: string, status: DonationStatus) {
+    setUpdatingId(id);
+    try {
+      const updated = await updateDonationStatus(id, status);
+      setDonations((prev) => prev.map((d) => (d.id === id ? updated : d)));
+    } catch {
+      setError("Could not update donation status. Please try again.");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   const successfulDonations = donations.filter((d) => d.status === "SUCCESS");
   const totalAmount = successfulDonations.reduce(
@@ -113,11 +149,13 @@ export default function Donations() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
+                    <TableHead>Donor</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead>Reference</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -125,6 +163,15 @@ export default function Donations() {
                     <TableRow key={d.id}>
                       <TableCell className="text-muted-foreground">
                         {format(parseISO(d.createdAt), "PP")}
+                      </TableCell>
+                      <TableCell>
+                        <div>{donorLabel(d)}</div>
+                        {!d.isAnonymous && d.donorPosition && (
+                          <div className="text-xs text-muted-foreground">
+                            {d.donorPosition}
+                            {d.donorLocation ? ` · ${d.donorLocation}` : ""}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         {categoryLabels[d.category] || d.category}
@@ -143,6 +190,41 @@ export default function Donations() {
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         MWK {Number(d.amount).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        {d.status === "PENDING" && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={updatingId === d.id}
+                              >
+                                <MoreVertical size={16} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(d.id, "SUCCESS")
+                                }
+                                className="text-success"
+                              >
+                                <Check size={14} className="mr-2" />
+                                Mark as Received
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStatusChange(d.id, "FAILED")
+                                }
+                                className="text-destructive"
+                              >
+                                <X size={14} className="mr-2" />
+                                Mark as Failed
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

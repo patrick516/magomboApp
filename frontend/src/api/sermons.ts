@@ -1,4 +1,4 @@
-import { apiClient, adminApiClient } from "./client";
+import { apiClient } from "./client";
 import type { ApiResponse, Sermon } from "../types";
 
 export async function getSermons(params?: {
@@ -12,8 +12,7 @@ export async function getSermons(params?: {
 }
 
 export async function getAllSermonsAdmin() {
-  const res =
-    await adminApiClient.get<ApiResponse<Sermon[]>>("/sermons/admin/all");
+  const res = await apiClient.get<ApiResponse<Sermon[]>>("/sermons/admin/all");
   return res.data.data;
 }
 
@@ -23,5 +22,5 @@ export async function getSermonsByPreacherAdmin(preacherId: string) {
 }
 
 export async function deleteSermon(id: string) {
-  await adminApiClient.delete(`/sermons/${id}`);
+  await apiClient.delete(`/sermons/${id}`);
 }

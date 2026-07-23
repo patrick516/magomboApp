@@ -6,6 +6,7 @@ import '../providers/preacher_provider.dart';
 import '../providers/sync_provider.dart';
 import '../widgets/preacher_picker_sheet.dart';
 import 'setup_screen.dart';
+import 'donation_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -72,9 +73,15 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.check_circle_outline, color: AppColors.success),
+                      Icon(
+                        Icons.check_circle_outline,
+                        color: AppColors.success,
+                      ),
                       SizedBox(width: 8),
-                      Text('Synced successfully', style: TextStyle(color: AppColors.success)),
+                      Text(
+                        'Synced successfully',
+                        style: TextStyle(color: AppColors.success),
+                      ),
                     ],
                   ),
                 ),
@@ -85,7 +92,9 @@ class HomeScreen extends ConsumerWidget {
                       backgroundColor: AppColors.primary,
                       child: Icon(Icons.person, color: Colors.white),
                     ),
-                    title: Text(selectedPreacher?.name ?? 'No profile selected'),
+                    title: Text(
+                      selectedPreacher?.name ?? 'No profile selected',
+                    ),
                     subtitle: Text(selectedPreacher?.position ?? ''),
                     trailing: TextButton(
                       onPressed: () => showPreacherPicker(context, ref),
@@ -95,7 +104,8 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/record-setup'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/record-setup'),
                   icon: const Icon(Icons.mic),
                   label: const Text('Start Recording'),
                   style: ElevatedButton.styleFrom(
@@ -115,6 +125,20 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               if (!isPastor) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DonationScreen()),
+                  ),
+                  icon: const Icon(Icons.favorite),
+                  label: const Text('Donate'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                  ),
+                ),
                 const SizedBox(height: 32),
                 Center(
                   child: TextButton(

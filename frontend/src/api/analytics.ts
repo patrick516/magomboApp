@@ -1,4 +1,4 @@
-import { adminApiClient } from "./client";
+import { apiClient } from "./client";
 import type {
   ApiResponse,
   AnalyticsOverview,
@@ -7,14 +7,14 @@ import type {
 } from "../types";
 
 export async function getOverview() {
-  const res = await adminApiClient.get<ApiResponse<AnalyticsOverview>>(
+  const res = await apiClient.get<ApiResponse<AnalyticsOverview>>(
     "/analytics/overview",
   );
   return res.data.data;
 }
 
 export async function getActivityOverTime(days = 30) {
-  const res = await adminApiClient.get<ApiResponse<ActivityDay[]>>(
+  const res = await apiClient.get<ApiResponse<ActivityDay[]>>(
     "/analytics/activity",
     {
       params: { days },
@@ -24,7 +24,7 @@ export async function getActivityOverTime(days = 30) {
 }
 
 export async function getRecentActivity(limit = 10) {
-  const res = await adminApiClient.get<ApiResponse<RecentActivityItem[]>>(
+  const res = await apiClient.get<ApiResponse<RecentActivityItem[]>>(
     "/analytics/recent",
     {
       params: { limit },

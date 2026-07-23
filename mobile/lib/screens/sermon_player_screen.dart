@@ -41,13 +41,13 @@ class _SermonPlayerScreenState extends State<SermonPlayerScreen> {
   Future<void> _loadAndPlay() async {
     setState(() => _loadError = false);
     try {
-      final localPath = _currentPart.localFilePath;
+     final localPath = _currentPart.localFilePath;
       if (localPath != null && localPath.isNotEmpty) {
         // Prefer local file — plays instantly, works even offline/unsynced
         await _player.setFilePath(localPath);
       } else {
-        final url = _api.getAudioUrl(_currentPart.id);
-        await _player.setUrl(url);
+        final signedUrl = await _api.getSignedAudioUrl(_currentPart.id);
+        await _player.setUrl(signedUrl);
       }
       await _player.play();
       // Only report play count to server if this part is actually synced
@@ -55,11 +55,17 @@ class _SermonPlayerScreenState extends State<SermonPlayerScreen> {
         _api.incrementPlayCount(_currentPart.id).catchError((_) {});
       }
     } catch (e) {
-      setState(() => _loadError = true);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not play audio: $e')),
-        );
+      // If the player is already actively playing despite this exception,
+      // it was a non-fatal hiccup (e.g. duration probing) — don't show an
+      // error for something that's actually working.
+      final alreadyPlaying = _player.playing;
+      if (!alreadyPlaying) {
+        setState(() => _loadError = true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not play audio: $e')),
+          );
+        }
       }
     }
   }
@@ -116,13 +122,31 @@ class _SermonPlayerScreenState extends State<SermonPlayerScreen> {
                   style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ],
-              if (_loadError) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'Audio could not be loaded.',
-                  style: TextStyle(fontSize: 13, color: AppColors.error),
-                ),
-              ],
+              StreamBuilder<PlayerState>(
+                stream: _player.playerStateStream,
+                builder: (context, snapshot) {
+                  final isActuallyPlaying = snapshot.data?.playing ?? false;
+
+                  // If real playback is happening, the earlier error was
+                  // stale/non-fatal — clear it so the UI reflects reality.
+                  if (isActuallyPlaying && _loadError) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) setState(() => _loadError = false);
+                    });
+                  }
+
+                  if (_loadError && !isActuallyPlaying) {
+                    return const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Audio could not be loaded.',
+                        style: TextStyle(fontSize: 13, color: AppColors.error),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
               const SizedBox(height: 40),
 
               StreamBuilder<Duration?>(

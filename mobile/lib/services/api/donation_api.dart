@@ -6,12 +6,12 @@ class DonationApi {
 
   Future<List<Donation>> listDonations() async {
     final response = await _dio.get('/donations');
-    final List data = response.data as List;
+    final List data = response.data['data'] as List;
     return data.map((json) => Donation.fromJson(json)).toList();
   }
 
   Future<Donation> createDonation(Donation donation) async {
     final response = await _dio.post('/donations', data: donation.toJson());
-    return Donation.fromJson(response.data);
+    return Donation.fromJson(response.data['data']);
   }
 }

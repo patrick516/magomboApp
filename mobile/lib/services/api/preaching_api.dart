@@ -34,8 +34,16 @@ class PreachingApi {
     return Preaching.fromJson(response.data['data']);
   }
 
-  String getAudioUrl(String preachingId) {
-    return '${_dio.options.baseUrl}/preachings/$preachingId/audio';
+/// Fetches the actual playable signed URL from the backend.
+  /// The /audio endpoint now returns JSON { success, data: { signedUrl } }
+  /// rather than an HTTP redirect, so this must be awaited before playback.
+  Future<String> getSignedAudioUrl(String preachingId) async {
+    final response = await _dio.get('/preachings/$preachingId/audio');
+    final signedUrl = response.data['data']['signedUrl'] as String?;
+    if (signedUrl == null) {
+      throw Exception('Backend did not return a signedUrl for this preaching');
+    }
+    return signedUrl;
   }
 
   Future<void> incrementPlayCount(String preachingId) async {

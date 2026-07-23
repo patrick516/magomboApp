@@ -1,3 +1,5 @@
+// lib/services/database_service.dart
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -19,8 +21,9 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -74,10 +77,29 @@ class DatabaseService {
         method TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'PENDING',
         reference TEXT,
+        is_anonymous INTEGER NOT NULL DEFAULT 0,
+        donor_first_name TEXT,
+        donor_last_name TEXT,
+        donor_position TEXT,
+        donor_location TEXT,
+        device_id TEXT,
         created_at TEXT NOT NULL,
         synced INTEGER NOT NULL DEFAULT 0
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Existing dev/test devices already have a v1 `donations` table
+      // without these columns — add them in place rather than dropping data.
+      await db.execute('ALTER TABLE donations ADD COLUMN is_anonymous INTEGER NOT NULL DEFAULT 0');
+      await db.execute('ALTER TABLE donations ADD COLUMN donor_first_name TEXT');
+      await db.execute('ALTER TABLE donations ADD COLUMN donor_last_name TEXT');
+      await db.execute('ALTER TABLE donations ADD COLUMN donor_position TEXT');
+      await db.execute('ALTER TABLE donations ADD COLUMN donor_location TEXT');
+      await db.execute('ALTER TABLE donations ADD COLUMN device_id TEXT');
+    }
   }
 
   Future<void> close() async {

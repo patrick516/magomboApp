@@ -11,6 +11,7 @@ const sermonRoutes = require("./src/modules/sermons/sermon.routes");
 const preachingRoutes = require("./src/modules/preachings/preaching.routes");
 const donationRoutes = require("./src/modules/donations/donation.routes");
 const analyticsRoutes = require("./src/modules/analytics/analytics.routes");
+const authRoutes = require("./src/modules/auth/auth.routes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,6 +39,7 @@ app.use("/api/sermons", sermonRoutes);
 app.use("/api/preachings", preachingRoutes);
 app.use("/api/donations", donationRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/auth", authRoutes);
 
 app.get("/health", (req, res) => {
   res.json({

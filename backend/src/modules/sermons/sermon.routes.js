@@ -3,7 +3,7 @@ const multer = require("multer");
 const router = express.Router();
 const sermonController = require("./sermon.controller");
 const preachingController = require("../preachings/preaching.controller");
-const adminAuth = require("../../middleware/adminAuth");
+const { authenticateAdmin } = require("../../middleware/auth");
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -11,8 +11,12 @@ const upload = multer({
 }); // 100MB max
 
 router.get("/", sermonController.listSermons);
-router.get("/admin/all", adminAuth, sermonController.listAllSermonsAdmin);
-router.delete("/:id", adminAuth, sermonController.deleteSermon);
+router.get(
+  "/admin/all",
+  authenticateAdmin,
+  sermonController.listAllSermonsAdmin,
+);
+router.delete("/:id", authenticateAdmin, sermonController.deleteSermon);
 router.post("/", sermonController.createSermon);
 router.get(
   "/:sermonId/preachings",

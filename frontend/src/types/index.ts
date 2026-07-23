@@ -48,7 +48,24 @@ export interface Donation {
   method: string;
   status: DonationStatus;
   reference: string | null;
+  isAnonymous: boolean;
+  donorFirstName: string | null;
+  donorLastName: string | null;
+  donorPosition: string | null;
+  donorLocation: string | null;
+  deviceId: string | null;
   createdAt: string;
+}
+
+export interface Admin {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  admin: Admin;
 }
 
 export interface ApiResponse<T> {

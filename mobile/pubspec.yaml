@@ -51,6 +51,7 @@ dependencies:
   just_audio: ^0.10.6
   flutter_sound: ^9.30.0
   logger: ^2.7.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

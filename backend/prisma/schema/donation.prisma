@@ -20,7 +20,15 @@ model Donation {
   method    String
   status    DonationStatus   @default(PENDING)
   reference String?
-  createdAt DateTime         @default(now()) @map("created_at")
+
+  isAnonymous    Boolean @default(false) @map("is_anonymous")
+  donorFirstName String? @map("donor_first_name")
+  donorLastName  String? @map("donor_last_name")
+  donorPosition  String? @map("donor_position")
+  donorLocation  String? @map("donor_location")
+  deviceId       String? @map("device_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@map("donations")
 }
