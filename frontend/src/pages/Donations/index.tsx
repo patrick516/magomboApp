@@ -1,6 +1,6 @@
 // src/pages/Donations/index.tsx
 
-import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Topbar } from "@/components/Layout/Topbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatsCard } from "@/components/common/StatsCard/index";
@@ -55,37 +55,27 @@ function donorLabel(d: Donation): string {
 }
 
 export default function Donations() {
-  const [donations, setDonations] = useState<Donation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  async function load() {
-    try {
-      const data = await getDonations();
-      setDonations(data);
-    } catch {
-      setError("Could not load donations. Is the backend running?");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const {
+    data: donations = [],
+    isLoading,
+    // isFetching,
+    error,
+  } = useQuery({
+    queryKey: ["donations"],
+    queryFn: getDonations,
+  });
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function handleStatusChange(id: string, status: DonationStatus) {
-    setUpdatingId(id);
-    try {
-      const updated = await updateDonationStatus(id, status);
-      setDonations((prev) => prev.map((d) => (d.id === id ? updated : d)));
-    } catch {
-      setError("Could not update donation status. Please try again.");
-    } finally {
-      setUpdatingId(null);
-    }
-  }
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: DonationStatus }) =>
+      updateDonationStatus(id, status),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<Donation[]>(["donations"], (prev) =>
+        prev ? prev.map((d) => (d.id === updated.id ? updated : d)) : prev,
+      );
+    },
+  });
 
   const successfulDonations = donations.filter((d) => d.status === "SUCCESS");
   const totalAmount = successfulDonations.reduce(
@@ -93,17 +83,27 @@ export default function Donations() {
     0,
   );
 
+  // Only show the full-page skeleton on the very first load (no cached data yet).
+  // On every subsequent visit, cached data renders instantly while isFetching
+  // quietly refreshes it in the background.
+  const showInitialSkeleton = isLoading && donations.length === 0;
+
   return (
     <div>
       <Topbar title="Donations" />
       <div className="p-8 space-y-6">
         {error && (
           <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg text-sm">
-            {error}
+            Could not load donations. Is the backend running?
+          </div>
+        )}
+        {statusMutation.isError && (
+          <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg text-sm">
+            Could not update donation status. Please try again.
           </div>
         )}
 
-        {loading ? (
+        {showInitialSkeleton ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-28 rounded-xl" />
@@ -134,7 +134,7 @@ export default function Donations() {
 
         <Card>
           <CardContent className="p-0">
-            {loading ? (
+            {showInitialSkeleton ? (
               <div className="p-6 space-y-3">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton key={i} className="h-10 w-full" />
@@ -198,7 +198,10 @@ export default function Donations() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                disabled={updatingId === d.id}
+                                disabled={
+                                  statusMutation.isPending &&
+                                  statusMutation.variables?.id === d.id
+                                }
                               >
                                 <MoreVertical size={16} />
                               </Button>
@@ -206,7 +209,10 @@ export default function Donations() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() =>
-                                  handleStatusChange(d.id, "SUCCESS")
+                                  statusMutation.mutate({
+                                    id: d.id,
+                                    status: "SUCCESS",
+                                  })
                                 }
                                 className="text-success"
                               >
@@ -215,7 +221,10 @@ export default function Donations() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  handleStatusChange(d.id, "FAILED")
+                                  statusMutation.mutate({
+                                    id: d.id,
+                                    status: "FAILED",
+                                  })
                                 }
                                 className="text-destructive"
                               >

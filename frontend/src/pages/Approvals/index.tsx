@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Topbar } from "@/components/Layout/Topbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,97 +37,74 @@ import {
   deletePreacher,
 } from "@/api/preachers";
 import { getSermonsByPreacherAdmin, deleteSermon } from "@/api/sermons";
-
-import type { Preacher, PreacherStatus, Sermon } from "@/types";
+import type { PreacherStatus } from "@/types";
 
 type FilterTab = "ALL" | PreacherStatus;
 
 export default function Approvals() {
-  const [preachers, setPreachers] = useState<Preacher[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterTab>("PENDING");
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [previewSermons, setPreviewSermons] = useState<
-    Record<string, Sermon[]>
-  >({});
-  const [previewLoading, setPreviewLoading] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  async function load() {
-    setLoading(true);
-    try {
-      const data = await getAllPreachers();
-      setPreachers(data);
-      setError(null);
-    } catch {
-      setError("Could not load preachers. Is the backend running?");
-    } finally {
-      setLoading(false);
-    }
+  const {
+    data: preachers = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["preachers"],
+    queryFn: getAllPreachers,
+  });
+
+  // Lazy-loaded sermon preview for whichever preacher card is expanded.
+  // Cached per preacher, so re-expanding the same preacher later shows
+  // instantly instead of refetching every time.
+  const { data: previewSermons, isLoading: previewLoading } = useQuery({
+    queryKey: ["preacherSermons", expandedId],
+    queryFn: () => getSermonsByPreacherAdmin(expandedId as string),
+    enabled: !!expandedId,
+  });
+
+  function togglePreview(preacherId: string) {
+    setExpandedId((prev) => (prev === preacherId ? null : preacherId));
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  const approveMutation = useMutation({
+    mutationFn: approvePreacher,
+    onMutate: (id: string) => setActionLoadingId(id),
+    onSettled: () => setActionLoadingId(null),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["preachers"] }),
+  });
 
-  async function togglePreview(preacherId: string) {
-    if (expandedId === preacherId) {
-      setExpandedId(null);
-      return;
-    }
-    setExpandedId(preacherId);
-    if (!previewSermons[preacherId]) {
-      setPreviewLoading(preacherId);
-      try {
-        const sermons = await getSermonsByPreacherAdmin(preacherId);
-        setPreviewSermons((prev) => ({ ...prev, [preacherId]: sermons }));
-      } finally {
-        setPreviewLoading(null);
-      }
-    }
-  }
+  const rejectMutation = useMutation({
+    mutationFn: rejectPreacher,
+    onMutate: (id: string) => setActionLoadingId(id),
+    onSettled: () => setActionLoadingId(null),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["preachers"] }),
+  });
 
-  async function handleApprove(id: string) {
-    setActionLoading(id);
-    try {
-      await approvePreacher(id);
-      await load();
-    } finally {
-      setActionLoading(null);
-    }
-  }
+  const deletePreacherMutation = useMutation({
+    mutationFn: deletePreacher,
+    onMutate: (id: string) => setActionLoadingId(id),
+    onSettled: () => setActionLoadingId(null),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["preachers"] }),
+  });
 
-  async function handleReject(id: string) {
-    setActionLoading(id);
-    try {
-      await rejectPreacher(id);
-      await load();
-    } finally {
-      setActionLoading(null);
-    }
-  }
-
-  async function handleDeletePreacher(id: string) {
-    setActionLoading(id);
-    try {
-      await deletePreacher(id);
-      await load();
-    } finally {
-      setActionLoading(null);
-    }
-  }
-
-  async function handleDeleteSermon(preacherId: string, sermonId: string) {
-    await deleteSermon(sermonId);
-    const updated = await getSermonsByPreacherAdmin(preacherId);
-    setPreviewSermons((prev) => ({ ...prev, [preacherId]: updated }));
-    await load();
-  }
+  const deleteSermonMutation = useMutation({
+    mutationFn: ({ sermonId }: { preacherId: string; sermonId: string }) =>
+      deleteSermon(sermonId),
+    onSuccess: (_data, { preacherId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["preacherSermons", preacherId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["preachers"] });
+    },
+  });
 
   const filtered =
     filter === "ALL" ? preachers : preachers.filter((p) => p.status === filter);
   const pendingCount = preachers.filter((p) => p.status === "PENDING").length;
+  const showInitialSkeleton = isLoading && preachers.length === 0;
 
   return (
     <div>
@@ -134,7 +112,7 @@ export default function Approvals() {
       <div className="p-8 space-y-6">
         {error && (
           <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg text-sm">
-            {error}
+            Could not load preachers. Is the backend running?
           </div>
         )}
 
@@ -149,7 +127,7 @@ export default function Approvals() {
           </TabsList>
         </Tabs>
 
-        {loading ? (
+        {showInitialSkeleton ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-24 w-full rounded-xl" />
@@ -166,7 +144,7 @@ export default function Approvals() {
           <div className="space-y-3">
             {filtered.map((preacher) => {
               const isExpanded = expandedId === preacher.id;
-              const sermons = previewSermons[preacher.id];
+              const isActionLoading = actionLoadingId === preacher.id;
 
               return (
                 <Card key={preacher.id}>
@@ -222,16 +200,18 @@ export default function Approvals() {
                               size="sm"
                               variant="outline"
                               className="border-destructive text-destructive hover:bg-destructive/10"
-                              disabled={actionLoading === preacher.id}
-                              onClick={() => handleReject(preacher.id)}
+                              disabled={isActionLoading}
+                              onClick={() => rejectMutation.mutate(preacher.id)}
                             >
                               <X size={16} className="mr-1" /> Reject
                             </Button>
                             <Button
                               size="sm"
                               className="bg-success hover:bg-success/90 text-white"
-                              disabled={actionLoading === preacher.id}
-                              onClick={() => handleApprove(preacher.id)}
+                              disabled={isActionLoading}
+                              onClick={() =>
+                                approveMutation.mutate(preacher.id)
+                              }
                             >
                               <Check size={16} className="mr-1" /> Approve
                             </Button>
@@ -244,7 +224,7 @@ export default function Approvals() {
                               size="sm"
                               variant="ghost"
                               className="text-destructive hover:bg-destructive/10"
-                              disabled={actionLoading === preacher.id}
+                              disabled={isActionLoading}
                             >
                               <Trash2 size={16} />
                             </Button>
@@ -266,7 +246,7 @@ export default function Approvals() {
                               <AlertDialogAction
                                 className="bg-destructive hover:bg-destructive/90"
                                 onClick={() =>
-                                  handleDeletePreacher(preacher.id)
+                                  deletePreacherMutation.mutate(preacher.id)
                                 }
                               >
                                 Delete Permanently
@@ -279,14 +259,14 @@ export default function Approvals() {
 
                     {isExpanded && (
                       <div className="mt-4 pt-4 border-t space-y-3">
-                        {previewLoading === preacher.id ? (
+                        {previewLoading && !previewSermons ? (
                           <Skeleton className="h-16 w-full" />
-                        ) : !sermons || sermons.length === 0 ? (
+                        ) : !previewSermons || previewSermons.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
                             No sermons recorded by this preacher yet.
                           </p>
                         ) : (
-                          sermons.map((sermon) => (
+                          previewSermons.map((sermon) => (
                             <div
                               key={sermon.id}
                               className="bg-muted/40 rounded-lg p-3"
@@ -323,10 +303,10 @@ export default function Approvals() {
                                       <AlertDialogAction
                                         className="bg-destructive hover:bg-destructive/90"
                                         onClick={() =>
-                                          handleDeleteSermon(
-                                            preacher.id,
-                                            sermon.id,
-                                          )
+                                          deleteSermonMutation.mutate({
+                                            preacherId: preacher.id,
+                                            sermonId: sermon.id,
+                                          })
                                         }
                                       >
                                         Delete Permanently

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Topbar } from "@/components/Layout/Topbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,7 +8,6 @@ import { StatusBadge } from "@/components/common/StatusBadge/index";
 import { Music2, Calendar } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getAllSermonsAdmin } from "@/api/sermons";
-import type { Sermon } from "@/types";
 
 function formatDuration(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -17,23 +16,16 @@ function formatDuration(seconds: number) {
 }
 
 export default function Sermons() {
-  const [sermons, setSermons] = useState<Sermon[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: sermons = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["sermons"],
+    queryFn: getAllSermonsAdmin,
+  });
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await getAllSermonsAdmin();
-        setSermons(data);
-      } catch {
-        setError("Could not load sermons. Is the backend running?");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const showInitialSkeleton = isLoading && sermons.length === 0;
 
   return (
     <div>
@@ -41,11 +33,11 @@ export default function Sermons() {
       <div className="p-8 space-y-4">
         {error && (
           <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg text-sm">
-            {error}
+            Could not load sermons. Is the backend running?
           </div>
         )}
 
-        {loading ? (
+        {showInitialSkeleton ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-32 w-full rounded-xl" />

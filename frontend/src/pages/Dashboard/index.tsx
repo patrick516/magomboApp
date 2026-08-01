@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Topbar } from "@/components/Layout/Topbar";
 import { StatsCard } from "@/components/common/StatsCard/index";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -19,51 +19,37 @@ import {
   getActivityOverTime,
   getRecentActivity,
 } from "@/api/analytics";
-import type {
-  AnalyticsOverview,
-  ActivityDay,
-  RecentActivityItem,
-} from "@/types";
 import { format, parseISO } from "date-fns";
 
 export default function Dashboard() {
-  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
-  const [activity, setActivity] = useState<ActivityDay[]>([]);
-  const [recent, setRecent] = useState<RecentActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: overview, isLoading: overviewLoading } = useQuery({
+    queryKey: ["analytics", "overview"],
+    queryFn: getOverview,
+  });
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [ov, act, rec] = await Promise.all([
-          getOverview(),
-          getActivityOverTime(30),
-          getRecentActivity(8),
-        ]);
-        setOverview(ov);
-        setActivity(act);
-        setRecent(rec);
-      } catch (err) {
-        setError("Could not load dashboard data. Is the backend running?");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const { data: activity = [], isLoading: activityLoading } = useQuery({
+    queryKey: ["analytics", "activity", 30],
+    queryFn: () => getActivityOverTime(30),
+  });
+
+  const { data: recent = [], isLoading: recentLoading } = useQuery({
+    queryKey: ["analytics", "recent", 8],
+    queryFn: () => getRecentActivity(8),
+  });
+
+  // const isAnyError = false; // individual query.error can be checked per-section if desired
+
+  // Only show skeletons before we have any cached data at all; on revisits,
+  // cached values render instantly while these queries refresh in the background.
+  const showOverviewSkeleton = overviewLoading && !overview;
+  const showActivitySkeleton = activityLoading && activity.length === 0;
+  const showRecentSkeleton = recentLoading && recent.length === 0;
 
   return (
     <div>
       <Topbar title="Dashboard" />
       <div className="p-8 space-y-6">
-        {error && (
-          <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
+        {showOverviewSkeleton ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-28 rounded-xl" />
@@ -112,7 +98,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {showActivitySkeleton ? (
                 <Skeleton className="h-64 w-full" />
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
@@ -196,7 +182,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {loading ? (
+              {showRecentSkeleton ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton key={i} className="h-12 w-full" />
                 ))
