@@ -16,7 +16,7 @@ export interface Sermon {
   theme: string;
   series: string | null;
   createdAt: string;
-  preacher?: { id: string; name: string; position: string | null };
+  preacher?: Pick<Preacher, "id" | "name" | "position" | "status">;
   preachings?: Preaching[];
 }
 
