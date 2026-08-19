@@ -1,0 +1,18 @@
+enum LiveSessionStatus {
+  LIVE
+  ENDED
+}
+
+model LiveSession {
+  id         String            @id @default(uuid())
+  preacherId String            @map("preacher_id")
+  title      String
+  status     LiveSessionStatus @default(LIVE)
+  streamUrl  String?           @map("stream_url")
+  startedAt  DateTime          @default(now()) @map("started_at")
+  endedAt    DateTime?         @map("ended_at")
+
+  preacher Preacher @relation(fields: [preacherId], references: [id])
+
+  @@map("live_sessions")
+}

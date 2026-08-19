@@ -1,0 +1,12 @@
+model Announcement {
+  id         String    @id @default(uuid())
+  preacherId String?   @map("preacher_id")
+  title      String
+  body       String
+  eventDate  DateTime? @map("event_date")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  preacher Preacher? @relation(fields: [preacherId], references: [id])
+
+  @@map("announcements")
+}

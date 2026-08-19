@@ -1,4 +1,3 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import '../repositories/preacher_repository.dart';
 import '../repositories/sermon_repository.dart';
 import '../repositories/preaching_repository.dart';
@@ -57,16 +56,17 @@ class SyncService {
     }
   }
 
-  Future<void> _pullLatest() async {
-    final prefs = await SharedPreferences.getInstance();
-    final since = prefs.getString('last_sync_at');
-
+ Future<void> _pullLatest() async {
     final preachers = await _preacherApi.listPreachers();
     for (final preacher in preachers) {
       await _preacherRepo.insert(preacher);
     }
 
-    final sermons = await _sermonApi.listSermons(since: since);
+    // Always fetch the full sermon list rather than an incremental "since"
+    // delta — at this data size, correctness matters more than bandwidth,
+    // and a device-clock-based watermark can silently exclude older
+    // sermons forever once it's set past their creation time.
+    final sermons = await _sermonApi.listSermons();
     for (final sermon in sermons) {
       await _sermonRepo.insert(sermon);
       final preachings = await _preachingApi.listPreachingsForSermon(sermon.id);
@@ -74,7 +74,5 @@ class SyncService {
         await _preachingRepo.insert(preaching);
       }
     }
-
-    await prefs.setString('last_sync_at', DateTime.now().toIso8601String());
   }
 }

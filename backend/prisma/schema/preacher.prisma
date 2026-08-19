@@ -12,7 +12,9 @@ model Preacher {
   status    PreacherStatus @default(PENDING)
   createdAt DateTime       @default(now()) @map("created_at")
 
-  sermons Sermon[]
+  sermons       Sermon[]
+  liveSessions  LiveSession[]
+  announcements Announcement[]
 
   @@map("preachers")
 }

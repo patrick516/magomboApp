@@ -12,6 +12,11 @@ const preachingRoutes = require("./src/modules/preachings/preaching.routes");
 const donationRoutes = require("./src/modules/donations/donation.routes");
 const analyticsRoutes = require("./src/modules/analytics/analytics.routes");
 const authRoutes = require("./src/modules/auth/auth.routes");
+const liveSessionRoutes = require("./src/modules/live-sessions/live-session.routes");
+const announcementRoutes = require("./src/modules/announcements/announcement.routes");
+const prayerRequestRoutes = require("./src/modules/prayer-requests/prayer-request.routes");
+const testimonyRoutes = require("./src/modules/testimonies/testimony.routes");
+const smallGroupRoutes = require("./src/modules/small-groups/small-group.routes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,6 +46,11 @@ app.use("/api/preachings", preachingRoutes);
 app.use("/api/donations", donationRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/live-sessions", liveSessionRoutes);
+app.use("/api/announcements", announcementRoutes);
+app.use("/api/prayer-requests", prayerRequestRoutes);
+app.use("/api/testimonies", testimonyRoutes);
+app.use("/api/small-groups", smallGroupRoutes);
 
 app.get("/health", (req, res) => {
   res.json({

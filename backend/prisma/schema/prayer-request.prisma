@@ -1,0 +1,16 @@
+enum PrayerRequestStatus {
+  NEW
+  PRAYED_FOR
+}
+
+model PrayerRequest {
+  id            String              @id @default(uuid())
+  requesterName String?             @map("requester_name")
+  isAnonymous   Boolean             @default(false) @map("is_anonymous")
+  message       String
+  status        PrayerRequestStatus @default(NEW)
+  deviceId      String?             @map("device_id")
+  createdAt     DateTime            @default(now()) @map("created_at")
+
+  @@map("prayer_requests")
+}

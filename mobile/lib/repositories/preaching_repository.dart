@@ -37,6 +37,32 @@ class PreachingRepository {
     return (maxPart ?? 0) + 1;
   }
 
+    /// Total number of preaching parts across every sermon this preacher owns
+  Future<int> getTotalPartsForPreacher(String preacherId) async {
+    final db = await _db;
+    final result = await db.rawQuery('''
+      SELECT COUNT(*) as totalParts
+      FROM preachings p
+      INNER JOIN sermons s ON p.sermon_id = s.id
+      WHERE s.preacher_id = ?
+    ''', [preacherId]);
+    return (result.first['totalParts'] as int?) ?? 0;
+  }
+
+  /// Sum of play_count across every preaching this preacher has recorded
+  Future<int> getTotalPlaysForPreacher(String preacherId) async {
+    final db = await _db;
+    final result = await db.rawQuery('''
+      SELECT COALESCE(SUM(p.play_count), 0) as totalPlays
+      FROM preachings p
+      INNER JOIN sermons s ON p.sermon_id = s.id
+      WHERE s.preacher_id = ?
+    ''', [preacherId]);
+    return (result.first['totalPlays'] as int?) ?? 0;
+  }
+
+
+
   Future<void> incrementPlayCount(String id) async {
     final db = await _db;
     await db.rawUpdate(
