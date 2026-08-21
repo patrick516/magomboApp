@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_colors.dart';
 import '../providers/content_provider.dart';
+import 'group_detail_screen.dart';
 
 class SmallGroupsScreen extends ConsumerWidget {
   const SmallGroupsScreen({super.key});
@@ -52,7 +53,13 @@ class SmallGroupsScreen extends ConsumerWidget {
                     .where((s) => s != null && s.isNotEmpty)
                     .join(' · ');
 
-                return Container(
+                return InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => GroupDetailScreen(groupId: g.id)),
+                  ),
+                  child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
@@ -102,6 +109,7 @@ class SmallGroupsScreen extends ConsumerWidget {
                           ),
                         ),
                     ],
+                  ),
                   ),
                 );
               },
