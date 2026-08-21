@@ -1,0 +1,12 @@
+model GroupComment {
+  id         String   @id @default(uuid())
+  postId     String   @map("post_id")
+  deviceId   String   @map("device_id")
+  authorName String   @map("author_name")
+  message    String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  post GroupPost @relation(fields: [postId], references: [id])
+
+  @@map("group_comments")
+}

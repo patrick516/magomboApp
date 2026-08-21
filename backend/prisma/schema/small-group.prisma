@@ -8,5 +8,8 @@ model SmallGroup {
   leaderName  String?  @map("leader_name")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  memberships GroupMembership[]
+  posts       GroupPost[]
+
   @@map("small_groups")
 }

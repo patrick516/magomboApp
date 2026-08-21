@@ -193,7 +193,7 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                               ),
                     ),
-                     _ManageTile(
+                                        _ManageTile(
                       icon: Icons.campaign_outlined,
                       label: 'Announcements',
                       onTap: () => Navigator.push(
@@ -261,9 +261,9 @@ class HomeScreen extends ConsumerWidget {
                     _ManageTile(
                       icon: Icons.campaign_outlined,
                       label: 'Announcements',
-                      onTap: () => Navigator.push(
+                                           onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ComingSoonScreen(title: 'Announcements')),
+                        MaterialPageRoute(builder: (_) => const AnnouncementsScreen()),
                       ),
                     ),
                                        _ManageTile(
@@ -279,7 +279,7 @@ class HomeScreen extends ConsumerWidget {
                       label: 'Testimonies',
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const TestimoniesScreen()),
+                        MaterialPageRoute(builder: (_) => TestimoniesScreen()),
                       ),
                     ),
                     _ManageTile(

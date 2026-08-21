@@ -1,0 +1,12 @@
+model GroupMembership {
+  id         String   @id @default(uuid())
+  groupId    String   @map("group_id")
+  deviceId   String   @map("device_id")
+  memberName String   @map("member_name")
+  joinedAt   DateTime @default(now()) @map("joined_at")
+
+  group SmallGroup @relation(fields: [groupId], references: [id])
+
+  @@unique([groupId, deviceId])
+  @@map("group_memberships")
+}

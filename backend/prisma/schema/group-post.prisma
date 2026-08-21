@@ -1,0 +1,13 @@
+model GroupPost {
+  id         String   @id @default(uuid())
+  groupId    String   @map("group_id")
+  deviceId   String   @map("device_id")
+  authorName String   @map("author_name")
+  message    String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  group    SmallGroup     @relation(fields: [groupId], references: [id])
+  comments GroupComment[]
+
+  @@map("group_posts")
+}
